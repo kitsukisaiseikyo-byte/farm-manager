@@ -7,63 +7,66 @@
     <title>営農管理システム Pro</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* 基本設定 (PC/共通) */
-        html, body { height: 100%; margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background: #f4f7f6; overflow: hidden; }
-        
-        /* サイドバー (PC: 左に常時表示) */
+        /* リセット & 基本設定 */
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background: #f4f7f6; }
+
+        /* レイアウトコンテナ (PCの横並び用) */
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        /* --- サイドバー (PC: 左に常時表示) --- */
         .sidebar {
             width: 260px;
             background: #2c3e50;
             color: #ecf0f1;
             display: flex;
             flex-direction: column;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-            z-index: 200;
+            overflow-y: auto;
             flex-shrink: 0;
-            height: 100vh;
+            z-index: 200;
         }
         .sidebar h2 { padding: 20px; margin: 0; background: #1a252f; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
-        
-        /* スマホ用ヘッダー (PCでは非表示) */
-        .mobile-header { display: none; }
-        .mobile-overlay { display: none; }
 
-        /* メニュー */
-        .menu { flex-grow: 1; padding: 10px 0; overflow-y: auto; }
-        .menu a { display: flex; align-items: center; gap: 10px; padding: 15px 20px; color: #bdc3c7; text-decoration: none; border-bottom: 1px solid #34495e; }
-        .menu a:hover, .menu a.active { background: #34495e; color: #fff; border-left: 4px solid #3498db; }
-        .submenu { background: #22303d; }
-        .submenu a { padding-left: 45px; font-size: 0.9rem; border-left: none !important; }
-        .submenu-label { padding: 10px 20px 5px; font-size: 0.75rem; color: #7f8c8d; text-transform: uppercase; font-weight: bold; }
-
-        .weather-widget { padding: 15px; background: #34495e; margin: 10px; border-radius: 8px; font-size: 0.9rem; }
-        .weather-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        
-        /* メインコンテンツ (PC) */
+        /* --- メインコンテンツ (PC: 残りの幅) --- */
         .main {
             flex-grow: 1;
-            position: relative;
-            width: 100%;
-            height: 100vh;
+            height: 100%;
             overflow-y: auto;
+            position: relative;
         }
         iframe { width: 100%; height: 100%; border: none; display: block; }
-        
-        .container { padding: 30px; max-width: 900px; margin: 0 auto; padding-bottom: 50px; }
 
-        /* カード・入力フォーム共通 */
+        /* --- コンポーネント共通設定 --- */
+        .container { padding: 30px; max-width: 900px; margin: 0 auto; padding-bottom: 50px; }
         .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
         h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-bottom: 20px; font-size: 1.5rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
+        
         input, textarea { width: 100%; padding: 12px; margin: 8px 0 20px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
         button, .btn { background: #3498db; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; transition: 0.3s; text-decoration: none; display: inline-block;}
         button:hover, .btn:hover { background: #2980b9; }
         .btn-green { background: #27ae60; } .btn-green:hover { background: #219150; }
         .btn-red { background: #e74c3c; padding: 6px 12px; font-size: 0.9rem; } .btn-red:hover { background: #c0392b; }
         .btn-orange { background: #f39c12; padding: 6px 12px; font-size: 0.9rem; } .btn-orange:hover { background: #e67e22; }
+        
         .checkbox-group { max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 6px; margin-bottom: 20px; background: #fafafa; }
         .checkbox-item { display: flex; align-items: center; margin-bottom: 8px; cursor: pointer; padding: 5px; }
         .checkbox-item:hover { background: #eee; }
         .checkbox-item input { width: 20px; height: 20px; margin: 0 10px 0 0; }
+
+        /* メニュー */
+        .menu { flex-grow: 1; padding: 10px 0; }
+        .menu a { display: flex; align-items: center; gap: 10px; padding: 15px 20px; color: #bdc3c7; text-decoration: none; border-bottom: 1px solid #34495e; }
+        .menu a:hover, .menu a.active { background: #34495e; color: #fff; border-left: 4px solid #3498db; }
+        .submenu { background: #22303d; }
+        .submenu a { padding-left: 45px; font-size: 0.9rem; border-left: none !important; }
+        .submenu-label { padding: 10px 20px 5px; font-size: 0.75rem; color: #7f8c8d; text-transform: uppercase; font-weight: bold; }
+        .weather-widget { padding: 15px; background: #34495e; margin: 10px; border-radius: 8px; font-size: 0.9rem; }
+        .weather-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
 
         /* テーブル (PC用) */
         table { width: 100%; border-collapse: collapse; }
@@ -71,53 +74,59 @@
         th { background: #f8f9fa; color: #2c3e50; white-space: nowrap; }
         td { white-space: nowrap; }
         td.content-cell { white-space: normal; min-width: 200px; }
-        
         .thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
         .field-tag { display: inline-block; background: #e8f4f8; color: #2980b9; padding: 2px 8px; border-radius: 12px; font-size: 0.85em; margin: 2px; border: 1px solid #bce0ef; }
 
+        /* カレンダー高さ (PC) */
+        #calendar { min-height: 600px; }
+
+        /* スマホ用パーツ (PCでは非表示) */
+        .mobile-header { display: none; }
+        .mobile-overlay { display: none; }
+
         /* =========================================
-           スマホ用レスポンシブ設定 (768px以下)
+           スマホ用レスポンシブ (768px以下)
            ========================================= */
         @media (max-width: 768px) {
-            /* サイドバーを隠してアニメーション対応 */
-            .sidebar {
-                position: fixed;
-                top: 0; left: 0;
-                height: 100%;
-                width: 80%;
-                max-width: 300px;
-                transform: translateX(-100%);
-            }
-            .sidebar.active { transform: translateX(0); }
+            /* コンテナのFlex解除 */
+            .app-container { display: block; height: auto; overflow: visible; }
 
-            /* ヘッダーを表示 */
+            /* ヘッダー表示 */
             .mobile-header {
                 display: flex;
                 position: fixed;
-                top: 0; left: 0;
-                width: 100%;
-                height: 50px;
-                background: #2c3e50;
-                z-index: 150;
-                align-items: center;
-                padding: 0 15px;
-                color: white;
+                top: 0; left: 0; width: 100%; height: 50px;
+                background: #2c3e50; color: white;
+                align-items: center; padding: 0 15px; z-index: 150;
                 box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-                box-sizing: border-box;
             }
             .hamburger { font-size: 1.5rem; cursor: pointer; }
-            .mobile-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 140; }
+
+            /* サイドバーを隠す */
+            .sidebar {
+                position: fixed;
+                top: 0; left: 0; height: 100%;
+                transform: translateX(-100%);
+                width: 80%; max-width: 300px;
+                transition: transform 0.3s;
+            }
+            .sidebar.active { transform: translateX(0); }
+
+            /* オーバーレイ */
+            .mobile-overlay {
+                display: none; position: fixed; top: 0; left: 0;
+                width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 140;
+            }
             .mobile-overlay.active { display: block; }
 
-            /* メインエリア調整 (ヘッダー分下げる) */
+            /* メインエリア調整 */
             .main {
                 margin-top: 50px;
                 height: calc(100dvh - 50px) !important;
             }
-            /* マップ画面はスクロール禁止 */
-            .main.map-mode { overflow: hidden; }
             
-            .container { padding: 15px; padding-bottom: 80px; }
+            /* カレンダー調整 */
+            #calendar { min-height: auto; }
 
             /* テーブルをカード化 */
             thead { display: none; }
@@ -125,6 +134,8 @@
             td { display: block; border: none; padding: 5px 0; white-space: normal; }
             td:before { content: attr(data-label); font-weight: bold; display: block; color: #7f8c8d; font-size: 0.85rem; margin-bottom: 2px; }
             .btn-group { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
+            
+            .container { padding: 15px; padding-bottom: 80px; }
         }
     </style>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
@@ -136,39 +147,41 @@
     </div>
     <div class="mobile-overlay" onclick="toggleSidebar()"></div>
 
-    <div class="sidebar" id="sidebar">
-        <h2><i class="fas fa-seedling"></i> 営農管理 Pro</h2>
+    <div class="app-container">
         
-        <div class="weather-widget">
-            <div style="margin-bottom:5px; font-weight:bold;">⛅ 杵築の天気</div>
-            {% for w in weather %}
-            <div class="weather-row"><span>{{ w.date[5:] }}</span><span>{{ w.emoji }} {{ w.max_temp }}℃</span></div>
-            {% endfor %}
-        </div>
-        
-        <div class="menu">
-            <div class="submenu-label">MAP SWITCHER</div>
-            <div class="submenu">
-                <a href="/?map_type=NDVI" class="{{ 'active' if current_map == 'NDVI' }}"><i class="fas fa-leaf"></i> NDVI (植生)</a>
-                <a href="/?map_type=NDWI" class="{{ 'active' if current_map == 'NDWI' }}"><i class="fas fa-tint"></i> NDWI (水分)</a>
-                <a href="/?map_type=GNDVI" class="{{ 'active' if current_map == 'GNDVI' }}"><i class="fas fa-seedling"></i> GNDVI (活力)</a>
+        <div class="sidebar" id="sidebar">
+            <h2><i class="fas fa-seedling"></i> 営農管理 Pro</h2>
+            
+            <div class="weather-widget">
+                <div style="margin-bottom:5px; font-weight:bold;">⛅ 杵築の天気</div>
+                {% for w in weather %}
+                <div class="weather-row"><span>{{ w.date[5:] }}</span><span>{{ w.emoji }} {{ w.max_temp }}℃</span></div>
+                {% endfor %}
             </div>
-            <div class="submenu-label">MENU</div>
-            <a href="/schedule" class="{{ 'active' if page == 'schedule' }}"><i class="far fa-calendar-alt"></i> カレンダー</a>
-            <a href="/report_list" class="{{ 'active' if page == 'report' }}"><i class="fas fa-clipboard-list"></i> 作業日報一覧</a>
-            <a href="/logout" style="color:#e74c3c;"><i class="fas fa-sign-out-alt"></i> ログアウト</a>
+            
+            <div class="menu">
+                <div class="submenu-label">MAP SWITCHER</div>
+                <div class="submenu">
+                    <a href="/?map_type=NDVI" class="{{ 'active' if current_map == 'NDVI' }}"><i class="fas fa-leaf"></i> NDVI (植生)</a>
+                    <a href="/?map_type=NDWI" class="{{ 'active' if current_map == 'NDWI' }}"><i class="fas fa-tint"></i> NDWI (水分)</a>
+                    <a href="/?map_type=GNDVI" class="{{ 'active' if current_map == 'GNDVI' }}"><i class="fas fa-seedling"></i> GNDVI (活力)</a>
+                </div>
+                <div class="submenu-label">MENU</div>
+                <a href="/schedule" class="{{ 'active' if page == 'schedule' }}"><i class="far fa-calendar-alt"></i> カレンダー</a>
+                <a href="/report_list" class="{{ 'active' if page == 'report' }}"><i class="fas fa-clipboard-list"></i> 作業日報一覧</a>
+                <a href="/logout" style="color:#e74c3c;"><i class="fas fa-sign-out-alt"></i> ログアウト</a>
+            </div>
+            <div style="padding: 20px;">
+                <a href="/report_add" style="display:block; text-align:center; background:#e74c3c; color:white; padding:12px; border-radius:6px; text-decoration:none;"><i class="fas fa-edit"></i> 日報を書く</a>
+            </div>
         </div>
-        <div style="padding: 20px;">
-            <a href="/report_add" style="display:block; text-align:center; background:#e74c3c; color:white; padding:12px; border-radius:6px; text-decoration:none;"><i class="fas fa-edit"></i> 日報を書く</a>
-        </div>
-    </div>
-    
-    <div class="main {% if page == 'map' %}map-mode{% endif %}">
-        
+
+        <div class="main {% if page == 'map' %}map-mode{% endif %}">
+            
         <div class="container">
             <div class="card">
                 <h1>📅 作業スケジュール</h1>
-                <div id='calendar' style="min-height: 500px;"></div>
+                <div id='calendar'></div>
             </div>
             <div class="card">
                 <h3>予定の追加</h3>
@@ -183,19 +196,24 @@
             document.addEventListener('DOMContentLoaded', function() {
                 var calendarEl = document.getElementById('calendar');
                 var initialView = window.innerWidth < 768 ? 'listMonth' : 'dayGridMonth';
+                
                 var calendar = new FullCalendar.Calendar(calendarEl, {
                     initialView: initialView,
                     locale: 'ja',
                     height: 'auto',
+                    
                     headerToolbar: { 
                         left: 'prev,next today', 
                         center: 'title', 
                         right: window.innerWidth < 768 ? 'listMonth,dayGridMonth' : 'dayGridMonth,listMonth' 
                     },
+                    
                     events: '/api/events',
+                    
                     eventClick: function(info) {
                         var eventObj = info.event;
                         var action = prompt("予定: " + eventObj.title + "\n\n操作を選択:\n1. 名前を変更\n2. 削除", "1");
+                        
                         if (action === "1") {
                             var newTitle = prompt("新しい予定名:", eventObj.title);
                             if (newTitle) {
@@ -207,6 +225,7 @@
                             }
                         }
                     },
+                    
                     windowResize: function(view) {
                         if (window.innerWidth < 768) {
                             calendar.changeView('listMonth');
@@ -234,6 +253,8 @@
             }
         </script>
     
+        </div>
+
     </div>
 
     <script>
