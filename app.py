@@ -129,7 +129,7 @@ def index():
     if map_type not in MAP_URLS: map_type = 'NDVI'
     return render_template('dashboard.html', page='map', current_map=map_type, default_map=MAP_URLS[map_type])
 
-# --- スケジュール関連 (更新・削除追加) ---
+# --- スケジュール関連 ---
 @app.route('/schedule')
 @login_required
 def schedule(): return render_template('schedule.html', page='schedule')
@@ -140,7 +140,6 @@ def api_events():
     conn = sqlite3.connect(os.path.join(BASE_DIR, DB_NAME))
     cur = conn.cursor()
     cur.execute("SELECT id, title, start_date FROM schedules")
-    # fullCalendar用にidも含める
     events = [{"id": r[0], "title": r[1], "start": r[2], "color": "#3788d8"} for r in cur.fetchall()]
     conn.close()
     return jsonify(events)
@@ -175,7 +174,7 @@ def schedule_delete():
     conn.close()
     return redirect(url_for('schedule'))
 
-# --- 日報関連 (編集追加) ---
+# --- 日報関連 ---
 @app.route('/report_list')
 @login_required
 def report_list():
@@ -198,7 +197,6 @@ def export_report():
 @app.route('/report_add', methods=['GET', 'POST'])
 @login_required
 def report_add():
-    # 既存データの編集モードかチェック
     edit_id = request.args.get('edit_id')
     edit_data = None
     
@@ -210,14 +208,14 @@ def report_add():
         conn.close()
 
     if request.method == 'POST':
-        report_id = request.form.get('id') # 編集時はIDがある
+        report_id = request.form.get('id')
         date = request.form['date']
         fields = request.form.getlist('field_name')
         field_str = ",".join(fields) if fields else "未選択"
         activity = request.form['activity']
         worker = request.form['worker']
         
-        image_filename = request.form.get('existing_image') # 既存画像
+        image_filename = request.form.get('existing_image')
         if 'image' in request.files:
             file = request.files['image']
             if file.filename != '':
@@ -228,20 +226,16 @@ def report_add():
         
         conn = sqlite3.connect(os.path.join(BASE_DIR, DB_NAME))
         if report_id:
-            # 更新 (Update)
             conn.execute("UPDATE reports SET date=?, field_name=?, activity=?, worker=?, image_path=? WHERE id=?",
                          (date, field_str, activity, worker, image_filename, report_id))
         else:
-            # 新規登録 (Insert)
             conn.execute("INSERT INTO reports (date, field_name, activity, worker, image_path) VALUES (?, ?, ?, ?, ?)",
                          (date, field_str, activity, worker, image_filename))
         conn.commit()
         conn.close()
         return redirect(url_for('report_list'))
     
-    # フォーム表示
     today = datetime.date.today().strftime('%Y-%m-%d')
-    # 編集時は既存の圃場選択状態を再現するためのリスト作成
     selected_fields = []
     if edit_data:
         selected_fields = edit_data[2].split(',')
