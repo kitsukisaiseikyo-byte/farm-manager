@@ -7,27 +7,17 @@
     <title>営農管理システム Pro</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { margin: 0; display: flex; height: 100vh; font-family: 'Helvetica Neue', Arial, sans-serif; background: #f4f7f6; overflow: hidden; }
+        /* html, bodyの高さを100%に固定してスクロール制御 */
+        html, body { height: 100%; margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background: #f4f7f6; overflow: hidden; }
         
         /* サイドバー */
-        .sidebar { width: 260px; background: #2c3e50; color: #ecf0f1; display: flex; flex-direction: column; box-shadow: 2px 0 5px rgba(0,0,0,0.1); z-index: 100; transition: transform 0.3s; flex-shrink: 0; }
+        .sidebar { width: 260px; background: #2c3e50; color: #ecf0f1; display: flex; flex-direction: column; box-shadow: 2px 0 5px rgba(0,0,0,0.1); z-index: 200; transition: transform 0.3s; flex-shrink: 0; height: 100%; }
         .sidebar h2 { padding: 20px; margin: 0; background: #1a252f; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
         
         /* スマホ用ヘッダー */
-        .mobile-header { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 50px; background: #2c3e50; z-index: 90; align-items: center; padding: 0 15px; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); box-sizing: border-box; }
+        .mobile-header { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 50px; background: #2c3e50; z-index: 150; align-items: center; padding: 0 15px; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); box-sizing: border-box; }
         .hamburger { font-size: 1.5rem; cursor: pointer; }
-        .mobile-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99; }
-
-        @media (max-width: 768px) {
-            .mobile-header { display: flex; }
-            .sidebar { position: fixed; top: 0; left: 0; height: 100%; transform: translateX(-100%); width: 80%; max-width: 300px; }
-            .sidebar.active { transform: translateX(0); }
-            .mobile-overlay.active { display: block; }
-            /* スマホ時のメインエリア調整 */
-            .main { margin-top: 50px; height: calc(100vh - 50px) !important; width: 100%; overflow-y: auto; }
-            /* マップ画面のみスクロール禁止 */
-            .main.map-mode { overflow: hidden; }
-        }
+        .mobile-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 140; }
 
         .menu { flex-grow: 1; padding: 10px 0; overflow-y: auto; }
         .menu a { display: flex; align-items: center; gap: 10px; padding: 15px 20px; color: #bdc3c7; text-decoration: none; border-bottom: 1px solid #34495e; }
@@ -39,11 +29,30 @@
         .weather-widget { padding: 15px; background: #34495e; margin: 10px; border-radius: 8px; font-size: 0.9rem; }
         .weather-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
         
-        .main { flex-grow: 1; overflow-y: auto; position: relative; width: 100%; height: 100%; }
+        /* メインエリア */
+        .main { flex-grow: 1; position: relative; width: 100%; height: 100%; overflow-y: auto; }
         iframe { width: 100%; height: 100%; border: none; display: block; }
         
-        .container { padding: 30px; max-width: 900px; margin: 0 auto; padding-bottom: 80px; }
-        @media (max-width: 768px) { .container { padding: 15px; padding-bottom: 50px; } }
+        /* コンテンツ幅調整 */
+        .container { padding: 30px; max-width: 900px; margin: 0 auto; padding-bottom: 100px; }
+        
+        /* スマホ時のレイアウト調整 */
+        @media (max-width: 768px) {
+            .mobile-header { display: flex; }
+            .sidebar { position: fixed; top: 0; left: 0; transform: translateX(-100%); width: 80%; max-width: 300px; }
+            .sidebar.active { transform: translateX(0); }
+            .mobile-overlay.active { display: block; }
+            
+            /* メインエリアの高さを dvh で計算し、見切れを防ぐ */
+            .main {
+                margin-top: 50px; /* ヘッダー分 */
+                height: calc(100dvh - 50px) !important; /* ここが重要 */
+                width: 100%;
+            }
+            /* マップ画面はスクロールさせない */
+            .main.map-mode { overflow: hidden; }
+            .container { padding: 15px; padding-bottom: 80px; }
+        }
 
         .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
         h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-bottom: 20px; font-size: 1.5rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
@@ -66,6 +75,7 @@
         td { white-space: nowrap; }
         td.content-cell { white-space: normal; min-width: 200px; }
         
+        /* スマホ用テーブルカード化 */
         @media (max-width: 768px) {
             thead { display: none; }
             tr { display: block; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; padding: 15px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
@@ -108,7 +118,6 @@
             <a href="/report_list" class="{{ 'active' if page == 'report' }}"><i class="fas fa-clipboard-list"></i> 作業日報一覧</a>
             <a href="/logout" style="color:#e74c3c;"><i class="fas fa-sign-out-alt"></i> ログアウト</a>
         </div>
-        
         <div style="padding: 20px;">
             <a href="/report_add" style="display:block; text-align:center; background:#e74c3c; color:white; padding:12px; border-radius:6px; text-decoration:none;"><i class="fas fa-edit"></i> 日報を書く</a>
         </div>
@@ -116,7 +125,7 @@
     
     <div class="main {% if page == 'map' %}map-mode{% endif %}">
         
-        <iframe src="{{ default_map }}"></iframe>
+        <iframe src="{{ default_map }}" style="width:100%; height:100%; border:none;"></iframe>
     
     </div>
 

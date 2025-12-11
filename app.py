@@ -199,7 +199,6 @@ def export_report():
 def report_add():
     edit_id = request.args.get('edit_id')
     edit_data = None
-    
     if edit_id:
         conn = sqlite3.connect(os.path.join(BASE_DIR, DB_NAME))
         cur = conn.cursor()
@@ -214,7 +213,6 @@ def report_add():
         field_str = ",".join(fields) if fields else "未選択"
         activity = request.form['activity']
         worker = request.form['worker']
-        
         image_filename = request.form.get('existing_image')
         if 'image' in request.files:
             file = request.files['image']
@@ -237,9 +235,7 @@ def report_add():
     
     today = datetime.date.today().strftime('%Y-%m-%d')
     selected_fields = []
-    if edit_data:
-        selected_fields = edit_data[2].split(',')
-
+    if edit_data: selected_fields = edit_data[2].split(',')
     return render_template('report_form.html', fields=FIELD_LIST, today=today, page='report', edit_data=edit_data, selected_fields=selected_fields)
 
 @app.route('/report_delete', methods=['POST'])
