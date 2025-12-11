@@ -23,20 +23,17 @@ MAP_URLS = {
 LAT = 33.416
 LON = 131.621
 
-# --- ディレクトリ設定 ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_PATH = os.path.join(BASE_DIR, UPLOAD_FOLDER)
 if not os.path.exists(UPLOAD_PATH):
     os.makedirs(UPLOAD_PATH)
 
-# --- エクセル読み込み ---
 try:
     df = pd.read_excel(os.path.join(BASE_DIR, CSV_PATH))
     FIELD_LIST = sorted(df['address'].unique().tolist())
 except Exception as e:
     FIELD_LIST = ["読み込み失敗"]
 
-# --- アプリ本体とLoginManager ---
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 login_manager = LoginManager()
@@ -49,19 +46,16 @@ class User(UserMixin):
         self.username = username
         self.password = password
 
-# --- DB初期化 ---
 def init_db():
     conn = sqlite3.connect(os.path.join(BASE_DIR, DB_NAME))
     cur = conn.cursor()
     cur.execute('CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, field_name TEXT NOT NULL, activity TEXT NOT NULL, worker TEXT NOT NULL, image_path TEXT)')
     cur.execute('CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, start_date TEXT NOT NULL, end_date TEXT, color TEXT)')
     cur.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, password TEXT NOT NULL)')
-    
     cur.execute('SELECT count(*) FROM users')
     if cur.fetchone()[0] == 0:
         default_pass = generate_password_hash('password')
         cur.execute('INSERT INTO users (username, password) VALUES (?, ?)', ('admin', default_pass))
-    
     conn.commit()
     conn.close()
 
@@ -96,8 +90,6 @@ def get_weather():
 @app.context_processor
 def inject_weather(): return dict(weather=get_weather())
 
-# --- ルーティング ---
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -129,7 +121,6 @@ def index():
     if map_type not in MAP_URLS: map_type = 'NDVI'
     return render_template('dashboard.html', page='map', current_map=map_type, default_map=MAP_URLS[map_type])
 
-# --- スケジュール関連 ---
 @app.route('/schedule')
 @login_required
 def schedule(): return render_template('schedule.html', page='schedule')
@@ -174,7 +165,6 @@ def schedule_delete():
     conn.close()
     return redirect(url_for('schedule'))
 
-# --- 日報関連 ---
 @app.route('/report_list')
 @login_required
 def report_list():
