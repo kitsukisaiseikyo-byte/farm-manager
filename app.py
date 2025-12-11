@@ -13,7 +13,7 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 DB_NAME = "farm_v2.db"
 UPLOAD_FOLDER = 'uploads'
 CSV_PATH = "新庄麦筆リスト.xlsx"
-SECRET_KEY = "secret_key_change_this" # セッション管理用の秘密鍵
+SECRET_KEY = "secret_key_change_this"
 
 MAP_URLS = {
     "NDVI": "https://kitsukisaiseikyo-byte.github.io/mugimap-shinjo2026/index.html",
@@ -34,47 +34,39 @@ try:
     df = pd.read_excel(os.path.join(BASE_DIR, CSV_PATH))
     FIELD_LIST = sorted(df['address'].unique().tolist())
 except Exception as e:
-    print(f"Excel load error: {e}")
     FIELD_LIST = ["読み込み失敗"]
 
 # --- アプリ本体とLoginManager ---
 app = Flask(__name__)
-app.secret_key = SECRET_KEY # ログイン機能に必須
+app.secret_key = SECRET_KEY
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login' # ログインしていないと飛ばされる先
+login_manager.login_view = 'login'
 
-# --- ユーザー定義 ---
 class User(UserMixin):
     def __init__(self, id, username, password):
         self.id = id
         self.username = username
         self.password = password
 
-# --- DB初期化 (ユーザーテーブル追加) ---
+# --- DB初期化 ---
 def init_db():
     conn = sqlite3.connect(os.path.join(BASE_DIR, DB_NAME))
     cur = conn.cursor()
     cur.execute('CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, field_name TEXT NOT NULL, activity TEXT NOT NULL, worker TEXT NOT NULL, image_path TEXT)')
     cur.execute('CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, start_date TEXT NOT NULL, end_date TEXT, color TEXT)')
-    # ユーザーテーブル
     cur.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, password TEXT NOT NULL)')
     
-    # ★初期ユーザー作成 (admin / password)
-    # すでにユーザーがいるか確認
     cur.execute('SELECT count(*) FROM users')
     if cur.fetchone()[0] == 0:
-        # いなければ作成
-        default_pass = generate_password_hash('password') # パスワードは 'password'
+        default_pass = generate_password_hash('password')
         cur.execute('INSERT INTO users (username, password) VALUES (?, ?)', ('admin', default_pass))
-        print("Default user 'admin' created.")
     
     conn.commit()
     conn.close()
 
 init_db()
 
-# --- ユーザー読み込み関数 (Flask-Login用) ---
 @login_manager.user_loader
 def load_user(user_id):
     conn = sqlite3.connect(os.path.join(BASE_DIR, DB_NAME))
@@ -86,7 +78,6 @@ def load_user(user_id):
         return User(id=res[0], username=res[1], password=res[2])
     return None
 
-# --- 天気取得 ---
 def get_weather():
     try:
         url = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Asia%2FTokyo&forecast_days=3"
@@ -105,26 +96,24 @@ def get_weather():
 @app.context_processor
 def inject_weather(): return dict(weather=get_weather())
 
-# --- ルーティング (ログイン関連) ---
+# --- ルーティング ---
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        
         conn = sqlite3.connect(os.path.join(BASE_DIR, DB_NAME))
         cur = conn.cursor()
         cur.execute("SELECT id, username, password FROM users WHERE username = ?", (username,))
         user_data = cur.fetchone()
         conn.close()
-        
         if user_data and check_password_hash(user_data[2], password):
             user = User(id=user_data[0], username=user_data[1], password=user_data[2])
             login_user(user)
             return redirect(url_for('index'))
         else:
             flash('ユーザー名またはパスワードが違います')
-            
     return render_template('login.html')
 
 @app.route('/logout')
@@ -133,8 +122,6 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-# --- ルーティング (メイン機能 - 全て @login_required で保護) ---
-
 @app.route('/')
 @login_required
 def index():
@@ -142,6 +129,7 @@ def index():
     if map_type not in MAP_URLS: map_type = 'NDVI'
     return render_template('dashboard.html', page='map', current_map=map_type, default_map=MAP_URLS[map_type])
 
+# --- スケジュール関連 (更新・削除追加) ---
 @app.route('/schedule')
 @login_required
 def schedule(): return render_template('schedule.html', page='schedule')
@@ -151,8 +139,9 @@ def schedule(): return render_template('schedule.html', page='schedule')
 def api_events():
     conn = sqlite3.connect(os.path.join(BASE_DIR, DB_NAME))
     cur = conn.cursor()
-    cur.execute("SELECT title, start_date FROM schedules")
-    events = [{"title": r[0], "start": r[1], "color": "#3788d8"} for r in cur.fetchall()]
+    cur.execute("SELECT id, title, start_date FROM schedules")
+    # fullCalendar用にidも含める
+    events = [{"id": r[0], "title": r[1], "start": r[2], "color": "#3788d8"} for r in cur.fetchall()]
     conn.close()
     return jsonify(events)
 
@@ -165,6 +154,28 @@ def schedule_add():
     conn.close()
     return redirect(url_for('schedule'))
 
+@app.route('/schedule_update', methods=['POST'])
+@login_required
+def schedule_update():
+    event_id = request.form['id']
+    title = request.form['title']
+    conn = sqlite3.connect(os.path.join(BASE_DIR, DB_NAME))
+    conn.execute("UPDATE schedules SET title = ? WHERE id = ?", (title, event_id))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('schedule'))
+
+@app.route('/schedule_delete', methods=['POST'])
+@login_required
+def schedule_delete():
+    event_id = request.form['id']
+    conn = sqlite3.connect(os.path.join(BASE_DIR, DB_NAME))
+    conn.execute("DELETE FROM schedules WHERE id = ?", (event_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('schedule'))
+
+# --- 日報関連 (編集追加) ---
 @app.route('/report_list')
 @login_required
 def report_list():
@@ -187,13 +198,26 @@ def export_report():
 @app.route('/report_add', methods=['GET', 'POST'])
 @login_required
 def report_add():
+    # 既存データの編集モードかチェック
+    edit_id = request.args.get('edit_id')
+    edit_data = None
+    
+    if edit_id:
+        conn = sqlite3.connect(os.path.join(BASE_DIR, DB_NAME))
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM reports WHERE id = ?", (edit_id,))
+        edit_data = cur.fetchone()
+        conn.close()
+
     if request.method == 'POST':
+        report_id = request.form.get('id') # 編集時はIDがある
         date = request.form['date']
         fields = request.form.getlist('field_name')
         field_str = ",".join(fields) if fields else "未選択"
         activity = request.form['activity']
         worker = request.form['worker']
-        image_filename = None
+        
+        image_filename = request.form.get('existing_image') # 既存画像
         if 'image' in request.files:
             file = request.files['image']
             if file.filename != '':
@@ -201,13 +225,28 @@ def report_add():
                 filename = f"{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}_{filename}"
                 file.save(os.path.join(UPLOAD_PATH, filename))
                 image_filename = filename
+        
         conn = sqlite3.connect(os.path.join(BASE_DIR, DB_NAME))
-        conn.execute("INSERT INTO reports (date, field_name, activity, worker, image_path) VALUES (?, ?, ?, ?, ?)",
-                     (date, field_str, activity, worker, image_filename))
+        if report_id:
+            # 更新 (Update)
+            conn.execute("UPDATE reports SET date=?, field_name=?, activity=?, worker=?, image_path=? WHERE id=?",
+                         (date, field_str, activity, worker, image_filename, report_id))
+        else:
+            # 新規登録 (Insert)
+            conn.execute("INSERT INTO reports (date, field_name, activity, worker, image_path) VALUES (?, ?, ?, ?, ?)",
+                         (date, field_str, activity, worker, image_filename))
         conn.commit()
         conn.close()
         return redirect(url_for('report_list'))
-    return render_template('report_form.html', fields=FIELD_LIST, today=datetime.date.today().strftime('%Y-%m-%d'), page='report')
+    
+    # フォーム表示
+    today = datetime.date.today().strftime('%Y-%m-%d')
+    # 編集時は既存の圃場選択状態を再現するためのリスト作成
+    selected_fields = []
+    if edit_data:
+        selected_fields = edit_data[2].split(',')
+
+    return render_template('report_form.html', fields=FIELD_LIST, today=today, page='report', edit_data=edit_data, selected_fields=selected_fields)
 
 @app.route('/report_delete', methods=['POST'])
 @login_required
